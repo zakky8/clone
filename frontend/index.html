@@ -1,0 +1,2068 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Draftly — Visual AI Studio</title>
+  <meta name="description" content="Build AI image & video generation workflows with connected nodes. Text to image, image to video, upscale, remove backgrounds — all in one visual studio."/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --black: #050508;
+      --dark: #0a0a10;
+      --card: #0f0f16;
+      --card2: #141420;
+      --border: rgba(255,255,255,0.06);
+      --border2: rgba(255,255,255,0.12);
+      --purple: #7c3aed;
+      --purple2: #8b5cf6;
+      --purple-light: #a78bfa;
+      --green: #22c55e;
+      --text: #f8f8ff;
+      --text2: #a0a0b8;
+      --text3: #5a5a70;
+      --font: 'Inter', 'Space Grotesk', sans-serif;
+    }
+
+    html { font-family: var(--font); background: var(--black); color: var(--text); }
+    body { overflow-x: hidden; }
+
+    /* ─── BACKGROUND ─── */
+    .bg-grid {
+      position: fixed; inset: 0; pointer-events: none; z-index: 0;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+      background-size: 40px 40px;
+    }
+
+    .bg-vignette {
+      position: fixed; inset: 0; pointer-events: none; z-index: 0;
+      background: radial-gradient(ellipse 80% 70% at 50% 50%, transparent 40%, rgba(5,5,8,0.95) 100%);
+    }
+
+    /* ─── FLOATING NAVBAR ─── */
+    .navbar {
+      position: fixed; top: 16px; left: 50%;
+      transform: translateX(-50%);
+      z-index: 1000;
+      background: rgba(15,15,22,0.85);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 100px;
+      padding: 8px 16px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      white-space: nowrap;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.08);
+    }
+
+    .nav-logo {
+      display: flex; align-items: center; gap: 8px;
+      text-decoration: none; margin-right: 8px;
+    }
+
+    .nav-logo-icon {
+      width: 22px; height: 22px;
+      background: white;
+      border-radius: 5px;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    .nav-logo-icon svg { width: 14px; height: 14px; }
+
+    .nav-logo span {
+      font-size: 0.9rem; font-weight: 800;
+      color: white; letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    .nav-sep { width: 1px; height: 20px; background: rgba(255,255,255,0.1); margin: 0 8px; }
+
+    .nav-link {
+      font-size: 0.8rem; font-weight: 500;
+      color: rgba(255,255,255,0.55);
+      text-decoration: none; padding: 6px 12px;
+      border-radius: 100px;
+      transition: all 0.2s;
+    }
+
+    .nav-link:hover { color: white; background: rgba(255,255,255,0.07); }
+
+    .nav-signin {
+      font-size: 0.8rem; font-weight: 500;
+      color: rgba(255,255,255,0.55);
+      text-decoration: none;
+      padding: 6px 12px;
+      transition: color 0.2s;
+    }
+
+    .nav-signin:hover { color: white; }
+
+    .nav-studio {
+      background: white; color: #0a0a0a;
+      font-size: 0.8rem; font-weight: 700;
+      text-decoration: none;
+      padding: 7px 18px;
+      border-radius: 100px;
+      transition: all 0.2s;
+      letter-spacing: 0.2px;
+    }
+
+    .nav-studio:hover { background: #e5e5e5; }
+
+    .nav-theme {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: rgba(255,255,255,0.08);
+      border: none; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      color: rgba(255,255,255,0.5);
+      font-size: 0.75rem; margin-left: 4px;
+      transition: all 0.2s;
+    }
+
+    .nav-theme:hover { background: rgba(255,255,255,0.14); color: white; }
+
+    /* ─── HERO ─── */
+    .hero {
+      position: relative;
+      min-height: 100vh;
+      background: linear-gradient(180deg,
+        #b8d4f0 0%,
+        #c9dff5 15%,
+        #d8eaf9 30%,
+        #e8f3fc 50%,
+        #f0f7fe 65%,
+        #f8fbff 80%,
+        #ffffff 100%
+      );
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-end;
+      padding-bottom: 6rem;
+      overflow: hidden;
+    }
+
+    /* 3D Scene container */
+    .hero-scene {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+    }
+
+    /* Abstract 3D platform/steps */
+    .hero-3d {
+      position: relative;
+      width: 600px; height: 400px;
+    }
+
+    /* Large torus/donut shape in center */
+    .torus {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -55%);
+      width: 200px; height: 200px;
+    }
+
+    .torus-svg {
+      width: 100%; height: 100%;
+      animation: torusFloat 6s ease-in-out infinite;
+      filter: drop-shadow(0 20px 40px rgba(160,200,240,0.4));
+    }
+
+    @keyframes torusFloat {
+      0%, 100% { transform: translateY(0) rotateX(5deg); }
+      50% { transform: translateY(-18px) rotateX(5deg); }
+    }
+
+    /* Platform blocks */
+    .platforms {
+      position: absolute;
+      bottom: 0; left: 50%;
+      transform: translateX(-50%);
+      width: 700px; height: 220px;
+    }
+
+    /* Node pills floating in hero */
+    .hero-nodes {
+      position: absolute;
+      top: 20%; width: 100%;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      padding: 0 40px;
+      pointer-events: none;
+    }
+
+    .hero-node {
+      background: rgba(255,255,255,0.7);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255,255,255,0.9);
+      border-radius: 12px;
+      padding: 8px 12px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: #333;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      animation: nodeFloat 5s ease-in-out infinite;
+    }
+
+    .hero-node:nth-child(2) { animation-delay: -1.5s; }
+    .hero-node:nth-child(3) { animation-delay: -3s; }
+    .hero-node:nth-child(4) { animation-delay: -0.8s; }
+    .hero-node:nth-child(5) { animation-delay: -2.2s; }
+
+    @keyframes nodeFloat {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+
+    .hero-node-icon { font-size: 0.85rem; margin-right: 5px; }
+    .hero-node-label { color: #666; font-size: 0.62rem; display: block; }
+
+    /* Hero CTA area at bottom */
+    .hero-cta-area {
+      position: relative;
+      z-index: 10;
+      text-align: center;
+      padding: 0 1rem;
+    }
+
+    /* Scroll indicator */
+    .scroll-indicator {
+      position: absolute;
+      bottom: 2rem; left: 50%;
+      transform: translateX(-50%);
+      font-size: 0.7rem;
+      letter-spacing: 3px;
+      color: rgba(0,0,0,0.3);
+      text-transform: uppercase;
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .scroll-line {
+      width: 1px; height: 40px;
+      background: linear-gradient(to bottom, rgba(0,0,0,0.3), transparent);
+    }
+
+    /* Big hero heading */
+    .hero h1 {
+      font-size: clamp(3rem, 7vw, 6rem);
+      font-weight: 900;
+      line-height: 0.95;
+      color: #0a0a0a;
+      letter-spacing: -3px;
+      margin-bottom: 1.25rem;
+    }
+
+    .hero p.sub {
+      font-size: clamp(0.95rem, 1.8vw, 1.15rem);
+      color: rgba(0,0,0,0.5);
+      max-width: 500px;
+      margin: 0 auto 2rem;
+      line-height: 1.65;
+    }
+
+    .hero-btns {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .btn-open-studio {
+      background: #0a0a0a;
+      color: white;
+      font-size: 0.9rem;
+      font-weight: 700;
+      padding: 12px 28px;
+      border-radius: 100px;
+      text-decoration: none;
+      transition: all 0.2s;
+      border: none; cursor: pointer;
+    }
+
+    .btn-open-studio:hover { background: #1a1a1a; transform: translateY(-1px); }
+
+    .btn-3d-builder {
+      background: rgba(0,0,0,0.06);
+      color: #0a0a0a;
+      font-size: 0.9rem;
+      font-weight: 600;
+      padding: 12px 28px;
+      border-radius: 100px;
+      text-decoration: none;
+      border: 1px solid rgba(0,0,0,0.12);
+      transition: all 0.2s;
+    }
+
+    .btn-3d-builder:hover { background: rgba(0,0,0,0.1); transform: translateY(-1px); }
+
+    /* ─── DARK SECTIONS ─── */
+    .dark-section {
+      position: relative;
+      z-index: 1;
+      background: var(--black);
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 2rem;
+    }
+
+    /* ─── LIVE DEMO SECTION ─── */
+    .demo-section {
+      padding: 6rem 2rem 4rem;
+      text-align: center;
+    }
+
+    .demo-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--text3);
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      margin-bottom: 0.75rem;
+    }
+
+    .demo-title {
+      font-size: clamp(1.8rem, 3vw, 2.8rem);
+      font-weight: 800;
+      letter-spacing: -1.5px;
+      margin-bottom: 0.75rem;
+    }
+
+    .demo-sub {
+      font-size: 0.9rem;
+      color: var(--text2);
+      margin-bottom: 2rem;
+    }
+
+    .demo-sub a { color: var(--purple-light); text-decoration: none; }
+    .demo-sub a:hover { text-decoration: underline; }
+
+    /* Canvas demo box */
+    .canvas-box {
+      border: 1px solid var(--border2);
+      border-radius: 16px;
+      overflow: hidden;
+      background: #0a0a12;
+      box-shadow: 0 0 80px rgba(124,58,237,0.08);
+      position: relative;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .canvas-topbar {
+      height: 44px;
+      background: rgba(255,255,255,0.03);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 1rem;
+      gap: 6px;
+    }
+
+    .dot { width: 10px; height: 10px; border-radius: 50%; }
+    .dot-r { background: #ff5f57; } .dot-y { background: #febc2e; } .dot-g { background: #28c840; }
+
+    .canvas-body {
+      height: 400px;
+      background:
+        repeating-linear-gradient(0deg, transparent, transparent 39px, rgba(255,255,255,0.02) 39px, rgba(255,255,255,0.02) 40px),
+        repeating-linear-gradient(90deg, transparent, transparent 39px, rgba(255,255,255,0.02) 39px, rgba(255,255,255,0.02) 40px);
+      position: relative;
+      overflow: hidden;
+      cursor: grab;
+    }
+
+    .canvas-body:active { cursor: grabbing; }
+
+    /* Studio nodes inside demo */
+    .demo-node {
+      position: absolute;
+      background: #14141e;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 10px;
+      padding: 0;
+      min-width: 160px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+      user-select: none;
+      cursor: move;
+    }
+
+    .demo-node:hover { border-color: rgba(255,255,255,0.16); }
+
+    .demo-node-hdr {
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px 10px;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      font-size: 0.72rem; font-weight: 600; color: rgba(255,255,255,0.7);
+    }
+
+    .demo-node-icon {
+      width: 20px; height: 20px;
+      border-radius: 5px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.65rem;
+    }
+
+    .demo-node-body { padding: 8px 10px; }
+
+    .demo-port {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 0.65rem; color: rgba(255,255,255,0.3);
+      padding: 2px 0;
+    }
+
+    .dport {
+      width: 8px; height: 8px; border-radius: 50%;
+      border: 1.5px solid rgba(255,255,255,0.15);
+      background: var(--black);
+    }
+
+    .dport.active { border-color: var(--purple2); background: rgba(139,92,246,0.3); }
+    .dport.out { margin-left: auto; }
+
+    .demo-field {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.05);
+      border-radius: 5px;
+      padding: 5px 7px;
+      margin: 4px 0;
+    }
+
+    .demo-field-label { font-size: 0.58rem; color: rgba(255,255,255,0.3); margin-bottom: 2px; }
+    .demo-field-val { font-size: 0.68rem; color: rgba(255,255,255,0.5); }
+
+    .demo-node-select {
+      background: rgba(124,58,237,0.15);
+      border: 1px solid rgba(124,58,237,0.3);
+      border-radius: 5px;
+      padding: 4px 7px;
+      margin: 3px 0;
+      display: flex; align-items: center; justify-content: space-between;
+      font-size: 0.68rem; color: rgba(255,255,255,0.6);
+    }
+
+    /* SVG connectors */
+    .demo-svg {
+      position: absolute; inset: 0;
+      pointer-events: none;
+    }
+
+    .canvas-hint {
+      position: absolute; bottom: 12px; right: 12px;
+      font-size: 0.7rem; color: rgba(255,255,255,0.2);
+      letter-spacing: 0.5px;
+    }
+
+    /* Compact node workflow strip */
+    .workflow-strip {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
+      padding: 1.5rem 0 0;
+      flex-wrap: wrap;
+      row-gap: 0.5rem;
+    }
+
+    .ws-node {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 6px 12px;
+      font-size: 0.72rem;
+      color: var(--text2);
+      display: flex; align-items: center; gap: 6px;
+    }
+
+    .ws-arrow {
+      color: var(--text3); font-size: 0.75rem; padding: 0 4px;
+    }
+
+    /* ─── AGENTIC ARCHITECTURE ─── */
+    .agentic-section { padding: 6rem 0; }
+
+    .section-eyebrow {
+      font-size: 0.7rem; font-weight: 700;
+      color: var(--text3); text-transform: uppercase;
+      letter-spacing: 2px; margin-bottom: 0.75rem;
+    }
+
+    .section-h2 {
+      font-size: clamp(2rem, 4vw, 3.2rem);
+      font-weight: 800;
+      letter-spacing: -1.5px;
+      line-height: 1.05;
+      margin-bottom: 1rem;
+    }
+
+    .agentic-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 1rem;
+      margin-top: 3rem;
+    }
+
+    .agentic-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 1.75rem;
+      transition: all 0.3s;
+    }
+
+    .agentic-card:hover { border-color: rgba(255,255,255,0.12); transform: translateY(-2px); }
+
+    .agentic-card h3 { font-size: 1rem; font-weight: 700; margin-bottom: 0.6rem; }
+    .agentic-card p { font-size: 0.85rem; color: var(--text2); line-height: 1.65; margin-bottom: 1.25rem; }
+
+    /* Mini node chains */
+    .mini-chain {
+      display: flex; align-items: center; gap: 4px;
+      flex-wrap: wrap;
+    }
+
+    .mini-node {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--border2);
+      border-radius: 6px;
+      padding: 4px 9px;
+      font-size: 0.65rem;
+      color: rgba(255,255,255,0.5);
+    }
+
+    .mini-node.purple {
+      background: rgba(124,58,237,0.15);
+      border-color: rgba(124,58,237,0.3);
+      color: var(--purple-light);
+    }
+
+    .mini-arrow { color: var(--text3); font-size: 0.65rem; }
+
+    /* ─── WHAT IS DRAFTLY ─── */
+    .what-section { padding: 6rem 0; }
+
+    .what-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4rem;
+      align-items: center;
+      margin-top: 3rem;
+    }
+
+    @media (max-width: 768px) { .what-grid { grid-template-columns: 1fr; } }
+
+    .what-text h2 { font-size: clamp(2rem, 4vw, 3rem); font-weight: 800; letter-spacing: -1.5px; line-height: 1.05; margin-bottom: 1.25rem; }
+    .what-text p { font-size: 0.9rem; color: var(--text2); line-height: 1.75; margin-bottom: 1rem; }
+
+    .btn-try-free {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: white; color: #0a0a0a;
+      font-size: 0.875rem; font-weight: 700;
+      padding: 10px 24px; border-radius: 100px;
+      text-decoration: none; transition: all 0.2s;
+      margin-right: 8px;
+    }
+
+    .btn-try-free:hover { background: #e5e5e5; }
+
+    .btn-learn-more {
+      display: inline-flex; align-items: center; gap: 6px;
+      color: var(--text2); font-size: 0.875rem; font-weight: 500;
+      text-decoration: none; transition: color 0.2s;
+    }
+
+    .btn-learn-more:hover { color: var(--text); }
+
+    /* Stats grid */
+    .stats-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+      background: var(--border);
+    }
+
+    .stat-item {
+      background: var(--card);
+      padding: 1.25rem 1rem;
+      text-align: center;
+    }
+
+    .stat-val { font-size: 1.5rem; font-weight: 800; letter-spacing: -1px; margin-bottom: 4px; }
+    .stat-label { font-size: 0.7rem; color: var(--text3); }
+
+    /* ─── SELF-HOSTED ─── */
+    .hosted-section { padding: 6rem 0; }
+
+    .hosted-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1px;
+      background: var(--border);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+      margin: 2.5rem 0;
+    }
+
+    @media (max-width: 640px) { .hosted-grid { grid-template-columns: repeat(2, 1fr); } }
+
+    .hosted-item {
+      background: var(--card);
+      padding: 1.25rem 1.5rem;
+    }
+
+    .hosted-item .val { font-size: 1rem; font-weight: 700; margin-bottom: 3px; }
+    .hosted-item .lbl { font-size: 0.72rem; color: var(--text3); }
+
+    .steps-list { display: flex; flex-direction: column; gap: 0; margin-top: 2.5rem; }
+
+    .step-item {
+      display: flex;
+      gap: 1.25rem;
+      padding: 1.5rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .step-item:last-child { border-bottom: none; }
+
+    .step-num {
+      font-size: 0.65rem; font-weight: 700;
+      color: var(--text3);
+      width: 24px; flex-shrink: 0;
+      padding-top: 2px;
+    }
+
+    .step-content h4 { font-size: 0.95rem; font-weight: 700; margin-bottom: 4px; }
+    .step-content p { font-size: 0.82rem; color: var(--text2); margin-bottom: 8px; }
+
+    .code-block {
+      background: rgba(0,0,0,0.5);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 14px;
+      font-family: 'Courier New', monospace;
+      font-size: 0.75rem;
+      color: var(--purple-light);
+      overflow-x: auto;
+    }
+
+    /* ─── MODELS GRID ─── */
+    .models-section { padding: 6rem 0; }
+
+    .models-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 1rem;
+      margin-top: 2.5rem;
+    }
+
+    .model-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1.5rem;
+      transition: all 0.3s;
+    }
+
+    .model-card:hover { border-color: rgba(255,255,255,0.12); }
+
+    .model-card-hdr {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 0.6rem;
+    }
+
+    .model-name { font-size: 0.95rem; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+    .model-dot { width: 8px; height: 8px; border-radius: 50%; }
+    .dot-purple { background: var(--purple2); }
+    .dot-orange { background: #f97316; }
+    .dot-green { background: var(--green); }
+
+    .model-free {
+      font-size: 0.65rem; font-weight: 700;
+      background: rgba(34,197,94,0.12);
+      color: var(--green);
+      padding: 3px 8px; border-radius: 100px;
+      border: 1px solid rgba(34,197,94,0.2);
+    }
+
+    .model-desc { font-size: 0.82rem; color: var(--text2); margin-bottom: 1rem; line-height: 1.55; }
+
+    .model-specs {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 6px;
+      margin-bottom: 0.75rem;
+    }
+
+    .model-spec { font-size: 0.72rem; color: var(--text3); }
+    .model-spec strong { color: var(--text2); }
+
+    .model-repo {
+      font-family: 'Courier New', monospace;
+      font-size: 0.68rem;
+      color: var(--text3);
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 5px 8px;
+    }
+
+    /* ─── PIPELINE SECTION ─── */
+    .pipeline-section { padding: 6rem 0; }
+
+    .pipeline-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 0;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+      background: var(--border);
+      margin-top: 3rem;
+    }
+
+    .pipeline-step {
+      background: var(--card);
+      padding: 1.5rem;
+      position: relative;
+    }
+
+    .pipeline-step-num {
+      font-size: 0.65rem; font-weight: 700;
+      color: var(--purple2); margin-bottom: 0.5rem;
+    }
+
+    .pipeline-step h4 { font-size: 0.9rem; font-weight: 700; margin-bottom: 0.4rem; }
+    .pipeline-step p { font-size: 0.78rem; color: var(--text2); line-height: 1.55; }
+
+    /* ─── NODE TYPES ─── */
+    .nodes-section { padding: 6rem 0; }
+
+    .nodes-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1px;
+      background: var(--border);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+      margin-top: 2.5rem;
+    }
+
+    .node-type-item {
+      background: var(--card);
+      padding: 1.25rem 1.5rem;
+      transition: background 0.2s;
+    }
+
+    .node-type-item:hover { background: var(--card2); }
+
+    .node-type-label {
+      font-size: 0.65rem; font-weight: 700;
+      color: var(--text3); text-transform: uppercase;
+      letter-spacing: 1px; margin-bottom: 4px;
+    }
+
+    .node-type-desc { font-size: 0.78rem; color: var(--text2); line-height: 1.5; }
+
+    /* ─── FOR CREATORS ─── */
+    .creators-section { padding: 6rem 0; }
+
+    .creators-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1rem;
+      margin-top: 3rem;
+    }
+
+    .creator-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 2rem;
+      transition: all 0.3s;
+    }
+
+    .creator-card:hover { border-color: rgba(255,255,255,0.12); }
+
+    .creator-role {
+      font-size: 0.65rem; font-weight: 700;
+      color: var(--text3); text-transform: uppercase;
+      letter-spacing: 1.5px; margin-bottom: 0.75rem;
+    }
+
+    .creator-card h3 { font-size: 1rem; font-weight: 700; margin-bottom: 0.75rem; }
+    .creator-card p { font-size: 0.85rem; color: var(--text2); line-height: 1.65; margin-bottom: 1rem; }
+
+    .creator-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border);
+      border-radius: 100px;
+      padding: 5px 12px;
+      font-size: 0.72rem; color: var(--text2);
+    }
+
+    /* ─── HOW IT WORKS ─── */
+    .how-section { padding: 6rem 0; }
+
+    .how-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1px;
+      background: var(--border);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+      margin-top: 3rem;
+    }
+
+    @media (max-width: 768px) { .how-grid { grid-template-columns: repeat(2, 1fr); } }
+
+    .how-item {
+      background: var(--card);
+      padding: 1.75rem;
+    }
+
+    .how-num {
+      font-size: 0.65rem; font-weight: 700;
+      color: var(--text3); margin-bottom: 0.75rem;
+    }
+
+    .how-item h4 { font-size: 0.95rem; font-weight: 700; margin-bottom: 0.5rem; }
+    .how-item p { font-size: 0.82rem; color: var(--text2); line-height: 1.55; }
+
+    /* ─── TEMPLATES ─── */
+    .templates-section { padding: 6rem 0; }
+
+    .templates-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 1rem;
+      margin-top: 2.5rem;
+    }
+
+    .template-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1.5rem;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .template-card:hover { border-color: rgba(255,255,255,0.15); transform: translateY(-2px); }
+
+    .template-badge {
+      font-size: 0.65rem; font-weight: 700;
+      color: var(--text3); margin-bottom: 0.5rem;
+    }
+
+    .template-badge.pro { color: var(--purple-light); }
+
+    .template-card h4 { font-size: 0.95rem; font-weight: 700; margin-bottom: 0.4rem; }
+    .template-card p { font-size: 0.8rem; color: var(--text2); }
+
+    /* ─── AI MODELS LOGOS ─── */
+    .ai-models-section { padding: 6rem 0; }
+
+    .ai-models-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 1px;
+      background: var(--border);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+      margin-top: 2.5rem;
+    }
+
+    .ai-model-item {
+      background: var(--card);
+      padding: 1.25rem 1.5rem;
+    }
+
+    .ai-model-name { font-size: 0.9rem; font-weight: 700; margin-bottom: 2px; }
+    .ai-model-provider { font-size: 0.7rem; color: var(--text3); margin-bottom: 6px; }
+    .ai-model-type {
+      display: inline-flex;
+      font-size: 0.62rem; font-weight: 700;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--border);
+      border-radius: 100px;
+      padding: 2px 8px; color: var(--text3);
+    }
+
+    /* ─── COMPARISON ─── */
+    .compare-section { padding: 6rem 0; }
+
+    .compare-table {
+      width: 100%;
+      border-collapse: collapse;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+      margin-top: 2.5rem;
+    }
+
+    .compare-table th {
+      background: var(--card2);
+      padding: 1rem 1.5rem;
+      text-align: left;
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--text2);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .compare-table th:first-child { color: var(--text3); }
+
+    .compare-table td {
+      padding: 0.9rem 1.5rem;
+      font-size: 0.82rem;
+      border-bottom: 1px solid var(--border);
+      color: var(--text2);
+    }
+
+    .compare-table tr:last-child td { border-bottom: none; }
+    .compare-table tr:hover td { background: rgba(255,255,255,0.02); }
+
+    .compare-table td:nth-child(2) { color: var(--purple-light); font-weight: 600; }
+
+    .check { color: var(--green); }
+    .cross { color: var(--text3); }
+
+    /* ─── PRICING ─── */
+    .pricing-section { padding: 6rem 0; }
+
+    .pricing-note {
+      font-size: 0.85rem;
+      color: var(--text2);
+      text-align: center;
+      margin-bottom: 0.5rem;
+    }
+
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1rem;
+      margin-top: 3rem;
+    }
+
+    @media (max-width: 900px) { .pricing-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 560px) { .pricing-grid { grid-template-columns: 1fr; } }
+
+    .pricing-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 1.75rem;
+      position: relative;
+      transition: all 0.3s;
+    }
+
+    .pricing-card.popular {
+      border-color: rgba(124,58,237,0.4);
+      background: linear-gradient(135deg, rgba(124,58,237,0.08), var(--card));
+    }
+
+    .pricing-card:hover { transform: translateY(-3px); }
+
+    .popular-pill {
+      position: absolute; top: -11px; left: 50%;
+      transform: translateX(-50%);
+      background: var(--purple);
+      color: white; font-size: 0.65rem; font-weight: 700;
+      padding: 3px 12px; border-radius: 100px;
+      letter-spacing: 0.5px;
+    }
+
+    .pricing-tier { font-size: 0.7rem; font-weight: 700; color: var(--text3); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 0.5rem; }
+    .pricing-price { font-size: 2.5rem; font-weight: 900; letter-spacing: -2px; line-height: 1; margin-bottom: 0.25rem; }
+    .pricing-price span { font-size: 0.9rem; font-weight: 500; color: var(--text2); }
+    .pricing-desc { font-size: 0.8rem; color: var(--text3); margin-bottom: 1.5rem; padding-bottom: 1.25rem; border-bottom: 1px solid var(--border); }
+
+    .pricing-features { list-style: none; display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1.5rem; }
+    .pricing-features li { font-size: 0.8rem; color: var(--text2); display: flex; align-items: flex-start; gap: 8px; }
+    .pricing-features li::before { content: '✓'; color: var(--purple-light); font-weight: 700; flex-shrink: 0; }
+
+    .pricing-btn {
+      width: 100%; padding: 0.75rem;
+      border-radius: 10px;
+      font-size: 0.85rem; font-weight: 700;
+      cursor: pointer; transition: all 0.2s;
+      text-decoration: none;
+      text-align: center; display: block;
+    }
+
+    .pricing-btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--text); }
+    .pricing-btn-ghost:hover { border-color: rgba(255,255,255,0.2); }
+    .pricing-btn-purple { background: var(--purple); border: none; color: white; }
+    .pricing-btn-purple:hover { background: var(--purple2); }
+
+    /* ─── CONTACT ─── */
+    .contact-section { padding: 6rem 0; }
+
+    .contact-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-top: 2.5rem;
+    }
+
+    .contact-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1.25rem 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+      transition: all 0.3s;
+    }
+
+    .contact-card:hover { border-color: rgba(255,255,255,0.15); transform: translateY(-2px); }
+
+    .contact-icon {
+      width: 36px; height: 36px;
+      border-radius: 10px;
+      background: rgba(255,255,255,0.05);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.9rem; color: var(--text2);
+      flex-shrink: 0;
+    }
+
+    .contact-label { font-size: 0.7rem; color: var(--text3); margin-bottom: 2px; }
+    .contact-value { font-size: 0.85rem; font-weight: 600; color: var(--text); }
+
+    /* ─── CTA SECTION ─── */
+    .cta-section {
+      padding: 8rem 2rem;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .cta-section::before {
+      content: '';
+      position: absolute; top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 600px; height: 300px;
+      background: radial-gradient(ellipse, rgba(124,58,237,0.1), transparent 70%);
+      pointer-events: none;
+    }
+
+    .cta-section h2 {
+      font-size: clamp(2.5rem, 5vw, 4.5rem);
+      font-weight: 900;
+      letter-spacing: -2.5px;
+      line-height: 1.0;
+      margin-bottom: 1rem;
+    }
+
+    .cta-section p { font-size: 0.9rem; color: var(--text2); margin-bottom: 2.5rem; line-height: 1.7; max-width: 500px; margin-left: auto; margin-right: auto; }
+
+    .cta-btns { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+
+    /* ─── LEGAL ─── */
+    .legal-section {
+      background: rgba(255,255,255,0.02);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 2rem;
+      margin: 0 2rem 4rem;
+    }
+
+    .legal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
+    @media (max-width: 640px) { .legal-grid { grid-template-columns: 1fr; } }
+
+    .legal-section h3 { font-size: 0.9rem; font-weight: 700; margin-bottom: 0.75rem; }
+    .legal-section p { font-size: 0.8rem; color: var(--text2); line-height: 1.7; }
+    .legal-section a { color: var(--purple-light); text-decoration: none; }
+
+    .legal-bottom {
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 0.5rem;
+      padding: 1rem 0 0;
+      margin-top: 1rem;
+      border-top: 1px solid var(--border);
+    }
+
+    .legal-bottom p { font-size: 0.72rem; color: var(--text3); font-family: monospace; }
+    .legal-links { display: flex; gap: 1rem; }
+    .legal-links a { font-size: 0.72rem; color: var(--text3); text-decoration: none; transition: color 0.2s; font-family: monospace; }
+    .legal-links a:hover { color: var(--text); }
+
+    /* ─── FOOTER ─── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 3rem 2rem;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    .footer-grid {
+      display: grid;
+      grid-template-columns: 1.8fr 1fr 1fr 1fr;
+      gap: 2.5rem;
+      margin-bottom: 2.5rem;
+    }
+
+    @media (max-width: 768px) { .footer-grid { grid-template-columns: 1fr 1fr; } }
+
+    .footer-logo {
+      display: flex; align-items: center; gap: 8px;
+      text-decoration: none; margin-bottom: 0.75rem;
+    }
+
+    .footer-logo-icon {
+      width: 24px; height: 24px;
+      background: white; border-radius: 5px;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    .footer-logo span { font-size: 0.95rem; font-weight: 800; color: white; letter-spacing: 1px; text-transform: uppercase; }
+    .footer-brand p { font-size: 0.82rem; color: var(--text3); line-height: 1.65; }
+
+    .footer-col h4 { font-size: 0.72rem; font-weight: 700; color: var(--text3); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 0.9rem; }
+    .footer-col ul { list-style: none; display: flex; flex-direction: column; gap: 0.5rem; }
+    .footer-col a { font-size: 0.82rem; color: var(--text2); text-decoration: none; transition: color 0.2s; }
+    .footer-col a:hover { color: var(--text); }
+
+    .footer-bottom {
+      border-top: 1px solid var(--border);
+      padding-top: 1.5rem;
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 0.5rem;
+    }
+
+    .footer-bottom p { font-size: 0.75rem; color: var(--text3); font-family: monospace; }
+
+    /* ─── UTIL ─── */
+    .text-center { text-align: center; }
+    .mt-sm { margin-top: 3rem; }
+
+    .fade-in { opacity: 0; transform: translateY(24px); transition: opacity 0.7s ease, transform 0.7s ease; }
+    .fade-in.visible { opacity: 1; transform: none; }
+
+    /* ─── SVG Platform ─── */
+    .platform-svg { width: 100%; height: 100%; }
+  </style>
+</head>
+<body>
+
+<!-- BACKGROUND -->
+<div class="bg-grid"></div>
+<div class="bg-vignette"></div>
+
+<!-- FLOATING NAVBAR -->
+<nav class="navbar">
+  <a href="index.html" class="nav-logo">
+    <div class="nav-logo-icon">
+      <svg viewBox="0 0 14 14" fill="none"><rect width="14" height="14" rx="2" fill="#0a0a0a"/><rect x="3" y="3" width="3.5" height="3.5" rx="0.5" fill="white"/><rect x="7.5" y="3" width="3.5" height="3.5" rx="0.5" fill="white"/><rect x="3" y="7.5" width="3.5" height="3.5" rx="0.5" fill="white"/></svg>
+    </div>
+    <span>DRAFTLY</span>
+  </a>
+  <div class="nav-sep"></div>
+  <a href="#about" class="nav-link">About</a>
+  <a href="#features" class="nav-link">Features</a>
+  <a href="#pricing" class="nav-link">Pricing</a>
+  <a href="#models" class="nav-link">Models</a>
+  <a href="#contact" class="nav-link">Contact</a>
+  <div class="nav-sep"></div>
+  <a href="studio.html" class="nav-signin">Sign In</a>
+  <a href="studio.html" class="nav-studio">Studio</a>
+  <button class="nav-theme" onclick="this.textContent=this.textContent==='☀️'?'🌙':'☀️'">🌙</button>
+</nav>
+
+<!-- ─── HERO ─────────────────────────────────────────────── -->
+<section class="hero">
+
+  <!-- 3D floating objects in the sky -->
+  <div class="hero-scene">
+    <div class="hero-3d">
+
+      <!-- Torus/Donut shape -->
+      <div class="torus">
+        <svg class="torus-svg" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <radialGradient id="tg1" cx="40%" cy="35%" r="60%">
+              <stop offset="0%" stop-color="#d4eaf7"/>
+              <stop offset="40%" stop-color="#a8cce8"/>
+              <stop offset="100%" stop-color="#6ba8d4"/>
+            </radialGradient>
+            <radialGradient id="tg2" cx="60%" cy="65%" r="50%">
+              <stop offset="0%" stop-color="#7bafd8"/>
+              <stop offset="100%" stop-color="#4a88b8"/>
+            </radialGradient>
+          </defs>
+          <!-- Outer torus body -->
+          <ellipse cx="100" cy="110" rx="70" ry="30" fill="#4a85b5" opacity="0.3"/>
+          <!-- Main torus shape using paths -->
+          <path d="M 30 100 Q 30 50 100 50 Q 170 50 170 100 Q 170 130 140 140 L 100 145 L 60 140 Q 30 130 30 100 Z"
+                fill="url(#tg1)" opacity="0.9"/>
+          <!-- Inner hole shadow -->
+          <ellipse cx="100" cy="100" rx="35" ry="25" fill="#87bbd8"/>
+          <ellipse cx="100" cy="100" rx="28" ry="19" fill="#b8d8ed"/>
+          <!-- Highlight -->
+          <ellipse cx="80" cy="78" rx="20" ry="10" fill="white" opacity="0.5" transform="rotate(-20,80,78)"/>
+          <!-- Twisted left arm -->
+          <path d="M 30 100 Q 20 120 35 140 Q 50 155 80 155 L 100 155" fill="url(#tg2)" opacity="0.85"/>
+          <!-- Twisted right arm -->
+          <path d="M 170 100 Q 180 120 165 140 Q 150 155 120 155 L 100 155" fill="url(#tg2)" opacity="0.85"/>
+          <!-- Bottom shadow -->
+          <ellipse cx="100" cy="158" rx="55" ry="12" fill="#3a72a8" opacity="0.25"/>
+        </svg>
+      </div>
+
+      <!-- Platform/stage below torus -->
+      <svg class="platforms" viewBox="0 0 700 220" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="pg1" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stop-color="#cce0f5"/>
+            <stop offset="100%" stop-color="#a8cce8"/>
+          </linearGradient>
+          <linearGradient id="pg2" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stop-color="#b5d4ef"/>
+            <stop offset="100%" stop-color="#8fbce0"/>
+          </linearGradient>
+          <linearGradient id="pg3" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stop-color="#95c4e8"/>
+            <stop offset="100%" stop-color="#6aaad8"/>
+          </linearGradient>
+        </defs>
+        <!-- Far left block -->
+        <rect x="30" y="100" width="100" height="120" fill="url(#pg3)" rx="4"/>
+        <rect x="30" y="88" width="100" height="14" fill="#b8d8f0" rx="2"/>
+        <!-- Mid-left block -->
+        <rect x="160" y="70" width="120" height="150" fill="url(#pg2)" rx="4"/>
+        <rect x="160" y="58" width="120" height="14" fill="#cce5f8" rx="2"/>
+        <!-- Center (tallest) block -->
+        <rect x="310" y="40" width="80" height="180" fill="url(#pg1)" rx="4"/>
+        <rect x="310" y="28" width="80" height="14" fill="#daeeff" rx="2"/>
+        <!-- Right-mid block -->
+        <rect x="420" y="70" width="120" height="150" fill="url(#pg2)" rx="4"/>
+        <rect x="420" y="58" width="120" height="14" fill="#cce5f8" rx="2"/>
+        <!-- Far right block -->
+        <rect x="570" y="100" width="100" height="120" fill="url(#pg3)" rx="4"/>
+        <rect x="570" y="88" width="100" height="14" fill="#b8d8f0" rx="2"/>
+        <!-- Shadow/floor -->
+        <ellipse cx="350" cy="220" rx="320" ry="20" fill="rgba(100,160,210,0.15)"/>
+      </svg>
+
+      <!-- Floating node pills -->
+      <div style="position:absolute; top:55px; left:-60px; animation: nodeFloat 5s ease-in-out infinite">
+        <div class="hero-node" style="background:rgba(255,255,255,0.85)">
+          <span class="hero-node-icon">📤</span> Upload Photo
+          <span class="hero-node-label">Drop your image</span>
+        </div>
+      </div>
+      <div style="position:absolute; top:30px; right:-80px; animation: nodeFloat 5s ease-in-out infinite; animation-delay:-2s">
+        <div class="hero-node" style="background:rgba(255,255,255,0.85)">
+          <span class="hero-node-icon">⚡</span> Image Gen
+          <span class="hero-node-label">AI generation</span>
+        </div>
+      </div>
+      <div style="position:absolute; top:200px; left:-80px; animation: nodeFloat 5s ease-in-out infinite; animation-delay:-1s">
+        <div class="hero-node" style="background:rgba(255,255,255,0.85)">
+          <span class="hero-node-icon">🔍</span> Upscale 4K
+          <span class="hero-node-label">Real-ESRGAN</span>
+        </div>
+      </div>
+      <div style="position:absolute; top:195px; right:-75px; animation: nodeFloat 5s ease-in-out infinite; animation-delay:-3s">
+        <div class="hero-node" style="background:rgba(255,255,255,0.85)">
+          <span class="hero-node-icon">🎬</span> Video Gen
+          <span class="hero-node-label">Veo 3.0</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CTA Area -->
+  <div class="hero-cta-area">
+    <h1>Visual AI Studio<br/>for Creators</h1>
+    <p class="sub">Connect AI nodes. Generate images &amp; videos.<br/>One studio, 12+ models.</p>
+    <div class="hero-btns">
+      <a href="studio.html" class="btn-open-studio">Open Studio</a>
+      <a href="#" class="btn-3d-builder">3D Website Builder</a>
+    </div>
+  </div>
+
+  <div class="scroll-indicator">
+    SCROLL
+    <div class="scroll-line"></div>
+  </div>
+
+</section>
+
+<!-- ─── DARK CONTENT ───────────────────────────────────────── -->
+<div class="dark-section" id="about">
+
+  <!-- LIVE DEMO -->
+  <div class="container">
+    <div class="demo-section fade-in">
+      <div class="demo-label">Live Demo</div>
+      <h2 class="demo-title">The real studio canvas</h2>
+      <p class="demo-sub">This is the exact same canvas from the Studio. Drag nodes around, explore the workflow. <a href="studio.html">Open the real Studio →</a></p>
+
+      <div class="canvas-box">
+        <div class="canvas-topbar">
+          <div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div>
+          <span style="margin-left:8px; font-size:0.72rem; color:rgba(255,255,255,0.2)">product_shoot_v2.workflow</span>
+        </div>
+        <div class="canvas-body" id="demo-canvas">
+          <svg class="demo-svg" id="demo-svg" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="dg" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="#7c3aed" stop-opacity="0.8"/>
+                <stop offset="100%" stop-color="#3b82f6" stop-opacity="0.8"/>
+              </linearGradient>
+            </defs>
+            <path id="conn1" d="M 195 80 C 240 80, 240 105, 270 105" stroke="url(#dg)" stroke-width="1.5" fill="none" stroke-dasharray="5,3" opacity="0.7"/>
+            <path id="conn2" d="M 440 105 C 490 105, 490 200, 520 200" stroke="url(#dg)" stroke-width="1.5" fill="none" stroke-dasharray="5,3" opacity="0.7"/>
+            <path id="conn3" d="M 680 200 C 730 200, 730 130, 760 130" stroke="url(#dg)" stroke-width="1.5" fill="none" stroke-dasharray="5,3" opacity="0.7"/>
+          </svg>
+
+          <!-- Node: Upload -->
+          <div class="demo-node" id="dn1" style="left:30px; top:55px" onmousedown="startDrag(event,'dn1')">
+            <div class="demo-node-hdr">
+              <div class="demo-node-icon" style="background:rgba(249,115,22,0.15)">📤</div>
+              IMAGE UPLOAD
+            </div>
+            <div class="demo-node-body">
+              <div class="demo-field">
+                <div class="demo-field-label">Drop image or click to upload</div>
+                <div class="demo-field-val">PNG, JPG, WebP, GIF</div>
+              </div>
+              <div class="demo-port" style="justify-content:flex-end"><span>image</span><div class="dport active out"></div></div>
+            </div>
+          </div>
+
+          <!-- Node: Text Prompt + Image Gen -->
+          <div class="demo-node" id="dn2" style="left:270px; top:30px; min-width:190px" onmousedown="startDrag(event,'dn2')">
+            <div class="demo-node-hdr">
+              <div class="demo-node-icon" style="background:rgba(139,92,246,0.15)">💬</div>
+              TEXT PROMPT
+            </div>
+            <div class="demo-node-body">
+              <div class="demo-field">
+                <div class="demo-field-label">Prompt</div>
+                <div class="demo-field-val" style="font-size:0.63rem">Front-facing hero shot, studio lighting...</div>
+              </div>
+              <div class="demo-node-select">Photorealistic <span>▾</span></div>
+              <div class="demo-port"><div class="dport active"></div><span>image</span></div>
+              <div class="demo-port" style="justify-content:flex-end"><span>image</span><div class="dport active out"></div></div>
+            </div>
+          </div>
+
+          <!-- Node: Image Gen -->
+          <div class="demo-node" id="dn3" style="left:520px; top:160px; min-width:185px" onmousedown="startDrag(event,'dn3')">
+            <div class="demo-node-hdr">
+              <div class="demo-node-icon" style="background:rgba(124,58,237,0.2)">⚡</div>
+              IMAGE GENERATION
+            </div>
+            <div class="demo-node-body">
+              <div class="demo-field">
+                <div class="demo-field-label">Model</div>
+                <div class="demo-field-val">Nano Banana Pro — Best (5cr)</div>
+              </div>
+              <div class="demo-field">
+                <div class="demo-field-label">Resolution</div>
+                <div class="demo-field-val">1K (1024px)</div>
+              </div>
+              <div class="demo-port"><div class="dport active"></div><span>image</span></div>
+              <div class="demo-port" style="justify-content:flex-end"><span>image</span><div class="dport active out"></div></div>
+            </div>
+          </div>
+
+          <!-- Node: Upscale 4K -->
+          <div class="demo-node" id="dn4" style="left:760px; top:90px" onmousedown="startDrag(event,'dn4')">
+            <div class="demo-node-hdr">
+              <div class="demo-node-icon" style="background:rgba(34,197,94,0.15)">🔍</div>
+              UPSCALE 4K
+            </div>
+            <div class="demo-node-body">
+              <div class="demo-field">
+                <div class="demo-field-label">Model</div>
+                <div class="demo-field-val">Real-ESRGAN</div>
+              </div>
+              <div class="demo-port"><div class="dport active"></div><span>image</span></div>
+              <div class="demo-port" style="justify-content:flex-end"><span>image</span><div class="dport active out"></div></div>
+            </div>
+          </div>
+
+          <div class="canvas-hint">Drag to explore · Use controls to zoom</div>
+        </div>
+
+        <!-- Workflow strip -->
+        <div class="workflow-strip">
+          <div class="ws-node">📤 Upload Photo</div>
+          <div class="ws-arrow">→</div>
+          <div class="ws-node">🎯 Hero Shot</div>
+          <div class="ws-arrow">→</div>
+          <div class="ws-node">📐 3/4 Angle</div>
+          <div class="ws-arrow">→</div>
+          <div class="ws-node">⚡ Image Gen</div>
+          <div class="ws-arrow">→</div>
+          <div class="ws-node">🔍 Upscale 4K</div>
+          <div class="ws-arrow">→</div>
+          <div class="ws-node">🎬 Video Gen</div>
+        </div>
+        <div style="text-align:center; padding:0.75rem; font-size:0.75rem">
+          <a href="studio.html" style="color:var(--purple-light); text-decoration:none; font-weight:600">Open full Studio →</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AGENTIC ARCHITECTURE -->
+  <div class="container" id="features">
+    <div class="agentic-section fade-in">
+      <div class="section-eyebrow">Agentic Architecture</div>
+      <h2 class="section-h2">Nodes that think for you</h2>
+      <p style="color:var(--text2); font-size:0.9rem; max-width:500px; line-height:1.7">Each node is an autonomous AI agent. Connect them and they pass data automatically. One click runs the entire chain.</p>
+
+      <div class="agentic-grid">
+        <div class="agentic-card">
+          <h3>Visual Pipelines</h3>
+          <p>Drag nodes onto a canvas, wire outputs to inputs. Each connection defines how data flows between AI operations.</p>
+          <div class="mini-chain">
+            <div class="mini-node">Upload</div><div class="mini-arrow">→</div>
+            <div class="mini-node purple">Remove BG</div><div class="mini-arrow">→</div>
+            <div class="mini-node">Upscale 4K</div><div class="mini-arrow">→</div>
+            <div class="mini-node">Video Gen</div>
+          </div>
+        </div>
+        <div class="agentic-card">
+          <h3>Autonomous Execution</h3>
+          <p>Hit "Generate" and every node runs in sequence. Images feed into video creators, upscalers, BG removers.</p>
+          <div class="mini-chain">
+            <div class="mini-node">Upload</div><div class="mini-arrow">→</div>
+            <div class="mini-node purple">Hero Shot</div><div class="mini-arrow">→</div>
+            <div class="mini-node purple">3/4 Angle</div><div class="mini-arrow">→</div>
+            <div class="mini-node">Top Down</div>
+          </div>
+        </div>
+        <div class="agentic-card">
+          <h3>Branching Workflows</h3>
+          <p>One input can feed many nodes. Upload once, branch into 5 styles, 10 angles, 3 videos.</p>
+          <div class="mini-chain">
+            <div class="mini-node purple">Upload</div><div class="mini-arrow">→</div>
+            <div class="mini-node">Gen 1</div><div class="mini-arrow">+</div>
+            <div class="mini-node">Gen 2</div><div class="mini-arrow">+</div>
+            <div class="mini-node">Gen 3</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- WHAT IS DRAFTLY -->
+  <div class="container">
+    <div class="what-section fade-in">
+      <div class="what-grid">
+        <div class="what-text">
+          <div class="section-eyebrow">What is Draftly</div>
+          <h2>A visual AI studio<br/>for creating anything</h2>
+          <p>Draftly Studio is a node-based workspace where you connect AI models like building blocks. No code, no chatbot prompts — just drag, connect, and create professional content.</p>
+          <p>Upload a single product photo and get back 10 angle variations, 4K upscaled versions, background-removed assets, and promo videos — all from one automated pipeline.</p>
+          <div style="margin-top:1.5rem">
+            <a href="studio.html" class="btn-try-free">Try it Free</a>
+            <a href="#features" class="btn-learn-more">Learn More →</a>
+          </div>
+        </div>
+        <div>
+          <div class="stats-grid">
+            <div class="stat-item"><div class="stat-val">12+</div><div class="stat-label">AI Models</div></div>
+            <div class="stat-item"><div class="stat-val">8</div><div class="stat-label">Node Types</div></div>
+            <div class="stat-item"><div class="stat-val">7</div><div class="stat-label">Templates</div></div>
+            <div class="stat-item"><div class="stat-val">&lt;3s</div><div class="stat-label">Avg Gen Time</div></div>
+            <div class="stat-item"><div class="stat-val">1536px</div><div class="stat-label">Max Resolution</div></div>
+            <div class="stat-item"><div class="stat-val">10s</div><div class="stat-label">Video Length</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SELF-HOSTED -->
+  <div class="container">
+    <div class="hosted-section fade-in">
+      <div class="section-eyebrow">Self-Hosted Mode</div>
+      <div class="section-h2" style="font-size:clamp(1.8rem,3.5vw,2.8rem)">Free &amp; Unlimited</div>
+      <h2 class="section-h2" style="font-size:clamp(2rem,4vw,3.2rem)">Run it on your own PC</h2>
+      <p style="color:var(--text2); font-size:0.9rem; max-width:650px; line-height:1.7; margin-top:0.75rem">Download the full Draftly Studio. Connect any open-source AI model from GitHub. Generate unlimited images and videos on your own hardware — zero API costs, forever free.</p>
+
+      <div class="hosted-grid">
+        <div class="hosted-item"><div class="val">GTX 1050 Ti (4 GB)</div><div class="lbl">Minimum GPU</div></div>
+        <div class="hosted-item"><div class="val">RTX 3060+ (12 GB)</div><div class="lbl">Recommended GPU</div></div>
+        <div class="hosted-item"><div class="val">16 GB+</div><div class="lbl">RAM</div></div>
+        <div class="hosted-item"><div class="val">50 GB free (for models)</div><div class="lbl">Storage</div></div>
+        <div class="hosted-item"><div class="val">Windows / Linux / macOS</div><div class="lbl">OS</div></div>
+        <div class="hosted-item"><div class="val">3.10+</div><div class="lbl">Python</div></div>
+      </div>
+
+      <h3 style="font-size:1.25rem; font-weight:800; letter-spacing:-0.5px; margin-top:2.5rem; margin-bottom:0.5rem">5 steps to unlimited AI</h3>
+
+      <div class="steps-list">
+        <div class="step-item">
+          <div class="step-num">01</div>
+          <div class="step-content">
+            <h4>Clone the Draftly Studio repo</h4>
+            <p>Download the open-source studio — front-end, node canvas, and local AI server included.</p>
+            <div class="code-block">git clone https://github.com/piyushxt43/draftly-studio-.git</div>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-num">02</div>
+          <div class="step-content">
+            <h4>Install Python + CUDA</h4>
+            <p>Install PyTorch with GPU support. Requires Python 3.10+ and an NVIDIA GPU with CUDA.</p>
+            <div class="code-block">pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121</div>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-num">03</div>
+          <div class="step-content">
+            <h4>Download your AI models</h4>
+            <p>Install Hugging Face libraries. Models auto-download on first use (~5-15 GB each).</p>
+            <div class="code-block">pip install diffusers transformers accelerate safetensors</div>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-num">04</div>
+          <div class="step-content">
+            <h4>Start the local server</h4>
+            <p>Runs at localhost:8000. The studio auto-detects the local server and shows "Local" models.</p>
+            <div class="code-block">cd local-server &amp;&amp; python server.py</div>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-num">05</div>
+          <div class="step-content">
+            <h4>Open the Studio and generate</h4>
+            <p>The studio opens with a ready-to-use workflow. Select local models, hit Generate — zero cost, unlimited.</p>
+            <div class="code-block">npm install &amp;&amp; npm run dev → Open localhost:3000</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- OPEN-SOURCE MODELS -->
+  <div class="container" id="models">
+    <div class="models-section fade-in">
+      <div class="section-eyebrow">Open-Source Image Models</div>
+      <p style="font-size:0.85rem; color:var(--text2); margin-bottom:0.5rem">Download from Hugging Face or GitHub. Plug into the Studio's Image Gen node.</p>
+
+      <div class="models-grid">
+        <div class="model-card">
+          <div class="model-card-hdr">
+            <div class="model-name"><div class="model-dot dot-green"></div> Stable Diffusion XL</div>
+            <div class="model-free">FREE</div>
+          </div>
+          <div class="model-desc">Industry standard. 1024px native, photorealistic and artistic.</div>
+          <div class="model-specs">
+            <div class="model-spec">VRAM: <strong>8 GB</strong></div>
+            <div class="model-spec">Size: <strong>~7 GB</strong></div>
+            <div class="model-spec">Speed: <strong>~5s / image</strong></div>
+            <div class="model-spec">Quality: <strong>High</strong></div>
+          </div>
+          <div class="model-repo">stabilityai/stable-diffusion-xl-base-1.0</div>
+        </div>
+        <div class="model-card">
+          <div class="model-card-hdr">
+            <div class="model-name"><div class="model-dot dot-orange"></div> Flux.1 Dev</div>
+            <div class="model-free">FREE</div>
+          </div>
+          <div class="model-desc">State-of-the-art text-to-image. Best prompt following, incredible detail.</div>
+          <div class="model-specs">
+            <div class="model-spec">VRAM: <strong>12 GB</strong></div>
+            <div class="model-spec">Size: <strong>~12 GB</strong></div>
+            <div class="model-spec">Speed: <strong>~8s / image</strong></div>
+            <div class="model-spec">Quality: <strong>Very High</strong></div>
+          </div>
+          <div class="model-repo">black-forest-labs/FLUX.1-dev</div>
+        </div>
+        <div class="model-card">
+          <div class="model-card-hdr">
+            <div class="model-name"><div class="model-dot dot-green"></div> Stable Diffusion 1.5</div>
+            <div class="model-free">FREE</div>
+          </div>
+          <div class="model-desc">Runs on almost any GPU. Massive LoRA and checkpoint ecosystem.</div>
+          <div class="model-specs">
+            <div class="model-spec">VRAM: <strong>4 GB</strong></div>
+            <div class="model-spec">Size: <strong>~5 GB</strong></div>
+            <div class="model-spec">Speed: <strong>~15s / image</strong></div>
+            <div class="model-spec">Quality: <strong>Good</strong></div>
+          </div>
+          <div class="model-repo">stable-diffusion-v1-5/stable-diffusion-v1-5</div>
+        </div>
+      </div>
+
+      <div class="section-eyebrow" style="margin-top:3rem">Open-Source Video Models</div>
+      <p style="font-size:0.85rem; color:var(--text2); margin-bottom:0.5rem">Text-to-video and image-to-video. Plug into the Studio's Video Gen node.</p>
+
+      <div class="models-grid">
+        <div class="model-card">
+          <div class="model-card-hdr">
+            <div class="model-name"><div class="model-dot dot-purple"></div> CogVideoX</div>
+            <div class="model-free">FREE</div>
+          </div>
+          <div class="model-desc">5B parameter video model. 6-second clips with strong motion coherence.</div>
+          <div class="model-specs">
+            <div class="model-spec">VRAM: <strong>16 GB</strong></div>
+            <div class="model-spec">Size: <strong>~10 GB</strong></div>
+            <div class="model-spec">Speed: <strong>~2 min / clip</strong></div>
+            <div class="model-spec">Quality: <strong>Very High</strong></div>
+          </div>
+          <div class="model-repo">THUDM/CogVideoX-5b</div>
+        </div>
+        <div class="model-card">
+          <div class="model-card-hdr">
+            <div class="model-name"><div class="model-dot dot-orange"></div> Hunyuan Video</div>
+            <div class="model-free">FREE</div>
+          </div>
+          <div class="model-desc">Tencent's open-source video gen. Great quality, supports image-to-video.</div>
+          <div class="model-specs">
+            <div class="model-spec">VRAM: <strong>16 GB</strong></div>
+            <div class="model-spec">Size: <strong>~15 GB</strong></div>
+            <div class="model-spec">Speed: <strong>~3 min / clip</strong></div>
+            <div class="model-spec">Quality: <strong>Very High</strong></div>
+          </div>
+          <div class="model-repo">tencent/HunyuanVideo</div>
+        </div>
+        <div class="model-card">
+          <div class="model-card-hdr">
+            <div class="model-name"><div class="model-dot dot-green"></div> AnimateDiff</div>
+            <div class="model-free">FREE</div>
+          </div>
+          <div class="model-desc">Runs on low-end GPUs. Uses SD 1.5 backbone. Good for short animations.</div>
+          <div class="model-specs">
+            <div class="model-spec">VRAM: <strong>4 GB</strong></div>
+            <div class="model-spec">Size: <strong>~5 GB</strong></div>
+            <div class="model-spec">Speed: <strong>~3 min / clip</strong></div>
+            <div class="model-spec">Quality: <strong>Good</strong></div>
+          </div>
+          <div class="model-repo">guoyww/animatediff-motion-adapter-v1-5-3</div>
+        </div>
+      </div>
+
+      <div style="text-align:center; margin-top:1.5rem">
+        <a href="#" style="color:var(--text2); font-size:0.85rem; text-decoration:none; border:1px solid var(--border); padding:8px 20px; border-radius:8px; transition:all 0.2s" onmouseover="this.style.borderColor='rgba(255,255,255,0.2)'" onmouseout="this.style.borderColor='var(--border)'">See all models and setup guide →</a>
+      </div>
+
+      <!-- Don't want the hassle -->
+      <div style="background:var(--card); border:1px solid var(--border); border-radius:16px; padding:2rem; margin-top:3rem; display:grid; grid-template-columns:1fr auto; gap:2rem; align-items:center" class="fade-in">
+        <div>
+          <h3 style="font-size:1.1rem; font-weight:700; margin-bottom:0.5rem">Don't want the hassle?</h3>
+          <p style="font-size:0.85rem; color:var(--text2); line-height:1.65; margin-bottom:0.75rem">Setting up GPU drivers, downloading 15 GB models, and debugging CUDA errors isn't for everyone. Our cloud plans give you instant access to 12+ premium AI models — no setup, no downloads, no GPU required.</p>
+          <div style="display:flex; gap:1rem; flex-wrap:wrap">
+            <span style="font-size:0.8rem; color:var(--text2)">✓ Instant — no setup</span>
+            <span style="font-size:0.8rem; color:var(--text2)">✓ 12+ premium models</span>
+            <span style="font-size:0.8rem; color:var(--text2)">✓ Starting at $25/mo</span>
+            <span style="font-size:0.8rem; color:var(--text2)">✓ Works on any device</span>
+          </div>
+        </div>
+        <a href="#pricing" class="btn-try-free" style="white-space:nowrap">View Plans</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- PIPELINE STEPS -->
+  <div class="container">
+    <div class="pipeline-section fade-in">
+      <div class="section-eyebrow">End-to-End Pipeline</div>
+      <h2 class="section-h2">One photo, infinite outputs</h2>
+      <p style="color:var(--text2); font-size:0.9rem">Upload a single image and the pipeline handles everything.</p>
+
+      <div class="pipeline-grid">
+        <div class="pipeline-step"><div class="pipeline-step-num">01</div><h4>Upload your photo</h4><p>Drag any image onto the canvas</p></div>
+        <div class="pipeline-step"><div class="pipeline-step-num">02</div><h4>AI analyzes your image</h4><p>Smart prompts auto-generated from context</p></div>
+        <div class="pipeline-step"><div class="pipeline-step-num">03</div><h4>Generate variations</h4><p>10+ versions — different angles, styles</p></div>
+        <div class="pipeline-step"><div class="pipeline-step-num">04</div><h4>Upscale to 4K</h4><p>Real-ESRGAN to crisp 1536px+</p></div>
+        <div class="pipeline-step"><div class="pipeline-step-num">05</div><h4>Remove backgrounds</h4><p>Clean cutouts for e-commerce</p></div>
+        <div class="pipeline-step"><div class="pipeline-step-num">06</div><h4>Create videos</h4><p>5-10s video with Veo 3.0 or Kling</p></div>
+        <div class="pipeline-step" style="grid-column:span 1"><div class="pipeline-step-num">07</div><h4>Export everything</h4><p>Individual or bulk-export</p></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- NODE TYPES -->
+  <div class="container">
+    <div class="nodes-section fade-in">
+      <div class="section-eyebrow">Node Types</div>
+      <h2 class="section-h2" style="font-size:clamp(1.8rem,3vw,2.5rem)">8 powerful nodes</h2>
+      <div class="nodes-grid">
+        <div class="node-type-item"><div class="node-type-label">TEXT PROMPT</div><div class="node-type-desc">Natural language scene descriptions.</div></div>
+        <div class="node-type-item"><div class="node-type-label">IMAGE GEN</div><div class="node-type-desc">Generate with Flux, Gemini, SDXL.</div></div>
+        <div class="node-type-item"><div class="node-type-label">VIDEO GEN</div><div class="node-type-desc">Create with Veo 3.0, Kling, Luma.</div></div>
+        <div class="node-type-item"><div class="node-type-label">UPSCALE</div><div class="node-type-desc">2x/4x Real-ESRGAN to 4K.</div></div>
+        <div class="node-type-item"><div class="node-type-label">REMOVE BG</div><div class="node-type-desc">Clean background extraction.</div></div>
+        <div class="node-type-item"><div class="node-type-label">VARIATION</div><div class="node-type-desc">Multiple image variations.</div></div>
+        <div class="node-type-item"><div class="node-type-label">UPLOAD</div><div class="node-type-desc">Start with your own images.</div></div>
+        <div class="node-type-item"><div class="node-type-label">PREVIEW</div><div class="node-type-desc">Preview and download outputs.</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FOR CREATORS -->
+  <div class="container">
+    <div class="creators-section fade-in">
+      <div class="section-eyebrow">For Creators</div>
+      <h2 class="section-h2">Your creative superpower</h2>
+      <p style="color:var(--text2); font-size:0.9rem; max-width:500px; line-height:1.7">Whether you're a photographer, designer, or content creator — Draftly turns hours into minutes.</p>
+
+      <div class="creators-grid">
+        <div class="creator-card">
+          <div class="creator-role">Photographers</div>
+          <h3>Upload one photo, get 10+ variations</h3>
+          <p>Different angles, lighting, and styles. Bulk upscale to 4K.</p>
+          <span class="creator-badge">⚡ 10x faster workflow</span>
+        </div>
+        <div class="creator-card">
+          <div class="creator-role">Designers</div>
+          <h3>Infinite creative ideas from prompts</h3>
+          <p>Generate visual concepts from prompts. Iterate with variations. Create mood boards without leaving the canvas.</p>
+          <span class="creator-badge">✨ Infinite creative ideas</span>
+        </div>
+        <div class="creator-card">
+          <div class="creator-role">Social Media</div>
+          <h3>Content at scale</h3>
+          <p>Create scroll-stopping content at scale. Generate images, turn products into videos, batch-produce content.</p>
+          <span class="creator-badge">📈 Content at scale</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HOW IT WORKS -->
+  <div class="container">
+    <div class="how-section fade-in">
+      <div class="section-eyebrow">Getting Started</div>
+      <h2 class="section-h2" style="font-size:clamp(1.8rem,3vw,2.5rem)">How it works</h2>
+      <div class="how-grid">
+        <div class="how-item"><div class="how-num">01</div><h4>Drag Nodes</h4><p>Pick from 8 node types and drop them onto the canvas.</p></div>
+        <div class="how-item"><div class="how-num">02</div><h4>Connect</h4><p>Wire outputs to inputs. Each connection defines data flow.</p></div>
+        <div class="how-item"><div class="how-num">03</div><h4>Generate</h4><p>Execute the entire pipeline with one click.</p></div>
+        <div class="how-item"><div class="how-num">04</div><h4>Export</h4><p>Download individual files or bulk-export everything.</p></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TEMPLATES -->
+  <div class="container">
+    <div class="templates-section fade-in">
+      <div class="section-eyebrow">Templates</div>
+      <h2 class="section-h2" style="font-size:clamp(1.8rem,3vw,2.5rem)">Start with a template</h2>
+      <p style="color:var(--text2); font-size:0.85rem">7 pre-built workflows. Load, upload, generate.</p>
+      <div class="templates-grid">
+        <div class="template-card"><div class="template-badge">5 images</div><h4>Quick 5-Image Pack</h4><p>Upload → 5 cinematic angles generated instantly.</p></div>
+        <div class="template-card"><div class="template-badge">10 img + 3 vid</div><h4>Content Creator 10</h4><p>Upload → 10 images + 3 videos. Full content package.</p></div>
+        <div class="template-card"><div class="template-badge">15 img + 5 vid</div><h4>Full Production 15</h4><p>Upload → 15 images + 5 videos. Complete production.</p></div>
+        <div class="template-card"><div class="template-badge">10 img + 5 vid</div><h4>Brand Asset Pack</h4><p>Upload → 10 branded images + 5 videos.</p></div>
+        <div class="template-card"><div class="template-badge pro">Pro only</div><h4>Text to Image</h4><p>Simple prompt → image → preview.</p></div>
+        <div class="template-card"><div class="template-badge">Processing</div><h4>Image Pipeline</h4><p>Upload → remove BG + upscale → variation.</p></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AI MODELS -->
+  <div class="container">
+    <div class="ai-models-section fade-in">
+      <div class="section-eyebrow">AI Models</div>
+      <h2 class="section-h2" style="font-size:clamp(1.8rem,3vw,2.5rem)">12+ models, one studio</h2>
+      <div class="ai-models-grid">
+        <div class="ai-model-item"><div class="ai-model-name">Gemini 2.5</div><div class="ai-model-provider">Google</div><span class="ai-model-type">Image + Video</span></div>
+        <div class="ai-model-item"><div class="ai-model-name">Flux Pro 1.1</div><div class="ai-model-provider">Black Forest Labs</div><span class="ai-model-type">Image</span></div>
+        <div class="ai-model-item"><div class="ai-model-name">Veo 3.0</div><div class="ai-model-provider">Google DeepMind</div><span class="ai-model-type">Video</span></div>
+        <div class="ai-model-item"><div class="ai-model-name">Kling 1.6</div><div class="ai-model-provider">Kuaishou</div><span class="ai-model-type">Video</span></div>
+        <div class="ai-model-item"><div class="ai-model-name">Stable Cascade</div><div class="ai-model-provider">Stability AI</div><span class="ai-model-type">Image</span></div>
+        <div class="ai-model-item"><div class="ai-model-name">Luma Dream</div><div class="ai-model-provider">Luma AI</div><span class="ai-model-type">Video</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- COMPARISON -->
+  <div class="container">
+    <div class="compare-section fade-in">
+      <div class="section-eyebrow">Comparison</div>
+      <h2 class="section-h2" style="font-size:clamp(1.8rem,3vw,2.5rem)">Why not just use ChatGPT?</h2>
+      <p style="color:var(--text2); font-size:0.9rem">Chatbots generate one image at a time. Draftly generates entire visual pipelines.</p>
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>Feature</th>
+            <th>Draftly</th>
+            <th>Chatbots</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Batch generation</td><td>50+ at once</td><td class="cross">1 at a time</td></tr>
+          <tr><td>Visual workflow</td><td>Node canvas</td><td class="cross">Text chat</td></tr>
+          <tr><td>Image to video</td><td>7 video models</td><td class="cross">Limited</td></tr>
+          <tr><td>Auto pipeline</td><td>Upload → Done</td><td class="cross">Manual steps</td></tr>
+          <tr><td>Templates</td><td>7 built-in</td><td class="cross">None</td></tr>
+          <tr><td>BG removal</td><td>Built-in node</td><td class="cross">Separate tool</td></tr>
+          <tr><td>Collaboration</td><td>Save &amp; share</td><td class="cross">Copy-paste</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- PRICING -->
+  <div class="container" id="pricing">
+    <div class="pricing-section fade-in">
+      <div class="section-eyebrow text-center">Pricing</div>
+      <h2 class="section-h2 text-center">One Pro unlock for both products</h2>
+      <p class="pricing-note">Pro gives shared access to Studio + 3D Website Builder under one subscription.</p>
+
+      <div class="pricing-grid">
+        <div class="pricing-card">
+          <div class="pricing-tier">Free</div>
+          <div class="pricing-price">$0 <span>/ mo</span></div>
+          <div class="pricing-desc">No image generation in Studio</div>
+          <ul class="pricing-features">
+            <li>Basic studio access</li>
+            <li>3D Website Builder</li>
+            <li>Community support</li>
+          </ul>
+          <a href="studio.html" class="pricing-btn pricing-btn-ghost">View Pricing</a>
+        </div>
+        <div class="pricing-card">
+          <div class="pricing-tier">Basic</div>
+          <div class="pricing-price">$25 <span>/ mo</span></div>
+          <div class="pricing-desc">1,500 credits, Gemini</div>
+          <ul class="pricing-features">
+            <li>1,500 credits / month</li>
+            <li>Gemini 2.5 model</li>
+            <li>Studio access</li>
+            <li>Email support</li>
+          </ul>
+          <a href="studio.html" class="pricing-btn pricing-btn-ghost">Get Basic</a>
+        </div>
+        <div class="pricing-card popular">
+          <div class="popular-pill">✦ Popular</div>
+          <div class="pricing-tier">Pro</div>
+          <div class="pricing-price">$60 <span>/ mo</span></div>
+          <div class="pricing-desc">3,600 credits, Studio + 3D Builder</div>
+          <ul class="pricing-features">
+            <li>3,600 credits / month</li>
+            <li>All 12+ premium models</li>
+            <li>Studio + 3D Builder</li>
+            <li>Priority support</li>
+            <li>Save &amp; share workflows</li>
+          </ul>
+          <a href="studio.html" class="pricing-btn pricing-btn-purple">Go Pro</a>
+        </div>
+        <div class="pricing-card">
+          <div class="pricing-tier">Premium</div>
+          <div class="pricing-price">$200 <span>/ mo</span></div>
+          <div class="pricing-desc">12,000 credits, max scale</div>
+          <ul class="pricing-features">
+            <li>12,000 credits / month</li>
+            <li>All Pro features</li>
+            <li>Max resolution outputs</li>
+            <li>Dedicated support</li>
+            <li>Custom workflows</li>
+          </ul>
+          <a href="studio.html" class="pricing-btn pricing-btn-ghost">Go Premium</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONTACT -->
+  <div class="container" id="contact">
+    <div class="contact-section fade-in">
+      <div class="section-eyebrow">Contact</div>
+      <h2 class="section-h2" style="font-size:clamp(1.8rem,3vw,2.5rem)">Let's connect</h2>
+      <p style="color:var(--text2); font-size:0.9rem">Got questions, partnership ideas, or investment interest?</p>
+      <div class="contact-grid">
+        <a href="https://linkedin.com" class="contact-card">
+          <div class="contact-icon"><i class="fab fa-linkedin-in"></i></div>
+          <div><div class="contact-label">LinkedIn</div><div class="contact-value">Piyush Singh</div></div>
+        </a>
+        <a href="https://instagram.com/piyush.glitch" class="contact-card">
+          <div class="contact-icon"><i class="fab fa-instagram"></i></div>
+          <div><div class="contact-label">Instagram</div><div class="contact-value">@piyush.glitch</div></div>
+        </a>
+        <a href="https://twitter.com/Piyush_Sxt" class="contact-card">
+          <div class="contact-icon"><i class="fab fa-x-twitter"></i></div>
+          <div><div class="contact-label">X (Twitter)</div><div class="contact-value">@Piyush_Sxt</div></div>
+        </a>
+        <a href="mailto:piyushsingh123443@gmail.com" class="contact-card">
+          <div class="contact-icon"><i class="fas fa-envelope"></i></div>
+          <div><div class="contact-label">Email</div><div class="contact-value">piyushsingh123443@gmail.com</div></div>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- CTA SECTION -->
+  <div class="cta-section fade-in">
+    <h2>Build something<br/>extraordinary</h2>
+    <p>Open the Studio. Upload a photo. Connect nodes. Generate. Export.</p>
+    <div class="cta-btns">
+      <a href="studio.html" class="btn-try-free" style="padding:12px 28px; font-size:0.95rem">Go to Studio</a>
+      <a href="#pricing" class="btn-learn-more" style="padding:12px 20px; border:1px solid var(--border); border-radius:100px">View Pricing</a>
+    </div>
+  </div>
+
+  <!-- LEGAL -->
+  <div class="legal-section">
+    <div class="legal-grid">
+      <div>
+        <h3>Terms of Service</h3>
+        <p>By using Draftly Studio, you agree to our Terms of Service. All content generated through the platform is owned by the user. Draftly does not claim ownership over any user-generated content.<br/><br/>We reserve the right to modify, suspend, or discontinue the service at any time.</p>
+      </div>
+      <div>
+        <h3>Privacy Policy</h3>
+        <p>We collect minimal personal data necessary to provide the service. We do not sell your data to third parties.</p>
+        <p style="margin-top:0.75rem">Contact: <a href="mailto:piyushsingh123443@gmail.com">piyushsingh123443@gmail.com</a></p>
+      </div>
+    </div>
+    <div class="legal-bottom">
+      <p>© 2026 Draftly Studio. All rights reserved.</p>
+      <div class="legal-links">
+        <a href="#">Terms</a><a href="#">Privacy</a><a href="#">Cookies</a><a href="#">GDPR</a>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /dark-section -->
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-grid">
+    <div class="footer-brand">
+      <a href="index.html" class="footer-logo">
+        <div class="footer-logo-icon">
+          <svg viewBox="0 0 14 14" fill="none" width="14" height="14"><rect width="14" height="14" rx="2" fill="#0a0a0a"/><rect x="3" y="3" width="3.5" height="3.5" rx="0.5" fill="white"/><rect x="7.5" y="3" width="3.5" height="3.5" rx="0.5" fill="white"/><rect x="3" y="7.5" width="3.5" height="3.5" rx="0.5" fill="white"/></svg>
+        </div>
+        <span>DRAFTLY</span>
+      </a>
+      <p>Visual AI Studio for product photography, video creation, and branded content — all from one pipeline.</p>
+    </div>
+    <div class="footer-col">
+      <h4>Product</h4>
+      <ul>
+        <li><a href="studio.html">Studio</a></li>
+        <li><a href="#pricing">Pricing</a></li>
+        <li><a href="#models">AI Models</a></li>
+        <li><a href="#templates">Templates</a></li>
+        <li><a href="studio.html">Live Demo</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Resources</h4>
+      <ul>
+        <li><a href="#about">About</a></li>
+        <li><a href="#features">How it Works</a></li>
+        <li><a href="#features">Features</a></li>
+        <li><a href="#">Changelog</a></li>
+        <li><a href="#contact">Contact</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Legal</h4>
+      <ul>
+        <li><a href="#">Terms of Service</a></li>
+        <li><a href="#">Privacy Policy</a></li>
+        <li><a href="#">Cookie Policy</a></li>
+        <li><a href="#">GDPR Compliance</a></li>
+        <li><a href="#">Data Requests</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <p>© 2026 Draftly Studio. All rights reserved.</p>
+    <p>Built in India 🇮🇳</p>
+    <p>piyushsingh123443@gmail.com</p>
+  </div>
+</footer>
+
+<script>
+  // Fade-in observer
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); obs.unobserve(e.target); } });
+  }, { threshold: 0.08 });
+  document.querySelectorAll('.fade-in').forEach(el => obs.observe(el));
+
+  // Demo canvas dragging
+  let activeDrag = null, ox = 0, oy = 0;
+
+  function startDrag(e, id) {
+    e.preventDefault();
+    const el = document.getElementById(id);
+    activeDrag = el;
+    const rect = el.parentElement.getBoundingClientRect();
+    ox = e.clientX - el.offsetLeft;
+    oy = e.clientY - el.offsetTop;
+    el.style.zIndex = 100;
+    document.addEventListener('mousemove', onDrag);
+    document.addEventListener('mouseup', stopDrag);
+  }
+
+  function onDrag(e) {
+    if (!activeDrag) return;
+    const wrap = document.getElementById('demo-canvas').getBoundingClientRect();
+    activeDrag.style.left = Math.max(0, e.clientX - ox) + 'px';
+    activeDrag.style.top = Math.max(0, e.clientY - oy) + 'px';
+    updateConnectors();
+  }
+
+  function stopDrag() {
+    if (activeDrag) { activeDrag.style.zIndex = ''; activeDrag = null; }
+    document.removeEventListener('mousemove', onDrag);
+    document.removeEventListener('mouseup', stopDrag);
+  }
+
+  function getPortPos(nodeId, dir, port) {
+    const node = document.getElementById(nodeId);
+    if (!node) return null;
+    const ports = node.querySelectorAll(`.dport${dir === 'out' ? '.out' : ':not(.out)'}`);
+    const p = ports[0];
+    if (!p) return null;
+    const cr = document.getElementById('demo-canvas').getBoundingClientRect();
+    const pr = p.getBoundingClientRect();
+    return { x: pr.left + pr.width/2 - cr.left, y: pr.top + pr.height/2 - cr.top };
+  }
+
+  function updateConnectors() {
+    const pairs = [['dn1','out','dn2','in'],['dn2','out','dn3','in'],['dn3','out','dn4','in']];
+    const ids = ['conn1','conn2','conn3'];
+    pairs.forEach((p, i) => {
+      const f = getPortPos(p[0], p[1], 0);
+      const t = getPortPos(p[2], p[3], 0);
+      if (!f || !t) return;
+      const cx = (f.x + t.x) / 2;
+      const path = document.getElementById(ids[i]);
+      if (path) path.setAttribute('d', `M ${f.x} ${f.y} C ${cx} ${f.y}, ${cx} ${t.y}, ${t.x} ${t.y}`);
+    });
+  }
+
+  updateConnectors();
+  window.addEventListener('resize', updateConnectors);
+</script>
+</body>
+</html>
